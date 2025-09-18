@@ -16,8 +16,8 @@ app.post('/zobot', async (req, res) => {
   try {
     const userMessage = req.body.message || req.body.text || 'Hello';
 
-    if (!OPENAI_KEY) {
-      console.error('[ERR] OPENAI_API_KEY missing');
+    if (!OPENAI_KEY || OPENAI_KEY.trim() === '') {
+      console.error('[ERR] OPENAI_API_KEY missing or empty');
       return res.status(500).json({
         action: 'reply',
         messages: [{ type: 'text', text: 'Server misconfigured: missing API key.' }]
@@ -27,14 +27,14 @@ app.post('/zobot', async (req, res) => {
     const payload = {
       model: 'gpt-3.5-turbo',
       messages: [
-        { role: 'system', content: 'You are a helpful assistant for Shree Swayam. Keep replies short and friendly.' },
+        { role: 'system', content: 'You are a helpful assistant for Shree Swayam. Keep answers short and friendly.' },
         { role: 'user', content: userMessage }
       ],
       max_tokens: 300,
       temperature: 0.2
     };
 
-    const r = await axios.post('https://api.openai.com/v1/chat/completions', payload, {
+    const openaiResp = await axios.post('https://api.openai.com/v1/chat/completions', payload, {
       headers: {
         Authorization: `Bearer ${OPENAI_KEY}`,
         'Content-Type': 'application/json'
@@ -42,7 +42,7 @@ app.post('/zobot', async (req, res) => {
       timeout: 20000
     });
 
-    const botReply = r.data?.choices?.[0]?.message?.content?.trim() || 'Sorry, I could not generate a response.';
+    const botReply = openaiResp?.data?.choices?.[0]?.message?.content?.trim() || 'Sorry, I could not generate a response.';
     return res.json({ action: 'reply', messages: [{ type: 'text', text: botReply }] });
 
   } catch (err) {
